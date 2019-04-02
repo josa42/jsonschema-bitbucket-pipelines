@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+
+  "required": ["pipelines"],
+
+  "properties": {
+    "image": { "$ref": "#/definitions/image" },
+
+    "definitions": {
+      "type": "object",
+      "properties": {
+        "services": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": { "$ref": "#/definitions/service" }
+          }
+        },
+        "caches": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "options": {
+      "type": "object",
+      "properties": {
+        "max-time": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        }
+      }
+    },
+
+    "clone": {
+      "type": "object",
+      "properties": {
+        "lfs": { "type": "boolean" },
+        "depth": { "type": "integer" }
+      }
+    },
+
+    "pipelines": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default": { "$ref": "#/definitions/pipeline" },
+        "branches": { "$ref": "#/definitions/named_pipelines" },
+        "tags": { "$ref": "#/definitions/named_pipelines" },
+        "bookmarks": { "$ref": "#/definitions/named_pipelines" },
+        "custom": { "$ref": "#/definitions/named_pipelines" },
+        "pull-requests": { "$ref": "#/definitions/named_pipelines" }
+      }
+    }
+  },
+
+  "definitions": {
+    "parallel": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "$ref": "#/definitions/step" }
+        },
+        "required": ["step"],
+        "additionalProperties": false
+      }
+    },
+    "step": {
+      "type": "object",
+      "aditionalProperties": false,
+      "required": ["script"],
+      "properties": {
+        "name": { "type": "string" },
+        "image": { "type": "string" },
+        "caches": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "script": {
+          "type": "array",
+          "items": {
+            "anyOf": [{ "type": "string" }, { "$ref": "#/definitions/pipe" }]
+          }
+        },
+        "deployment": {
+          "type": "string",
+          "enum": ["test", "staging", "production"]
+        },
+        "trigger": {
+          "type": "string",
+          "enum": ["automatic", "manual"],
+          "description": "Default: automatic"
+        },
+        "size": {
+          "type": "string",
+          "enum": ["1x", "2x"],
+          "description": "Default: 1x"
+        },
+        "after-script": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "services": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "max-time": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Default: 20"
+        }
+      }
+    },
+    "pipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pipe": { "type": "string" },
+        "variables": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": { "type": "string" }
+          }
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image"],
+      "properties": {
+        "image": { "$ref": "#/definitions/image" },
+        "memory": { "type": "integer" },
+        "variables": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "imageName": {
+      "type": "string",
+      "pattern": "^([^\\s/:]+/)?[^\\s/:]+(:[^\\s/:]+)?$"
+    },
+
+    "image": {
+      "anyOf": [
+        { "$ref": "#/definitions/imageName" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": { "$ref": "#/definitions/imageName" },
+            "username": { "type": "string" },
+            "password": { "type": "string" },
+            "email": { "type": "string" },
+            "run-as-user": { "type": "string" },
+            "aws": {
+              "type": "object",
+              "properties": {
+                "access-key": { "type": "string" },
+                "secret-key": { "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pipeline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "$ref": "#/definitions/step" },
+          "parallel": { "$ref": "#/definitions/parallel" }
+        },
+        "oneOf": [{ "required": ["parallel"] }, { "required": ["step"] }]
+      }
+    },
+    "named_pipelines": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": { "$ref": "#/definitions/pipeline" }
+      }
+    }
+  }
+}
